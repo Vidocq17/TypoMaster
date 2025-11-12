@@ -1,11 +1,7 @@
 
 <template>
   <div class="container">
-    <header class="header">
-      <img src="../assets/img/logo.png" alt="TypoMaster Logo" class="logo" style="transform: rotateY(180deg);" />
-      <h1>TypoMaster</h1>
-      <img src="../assets/img/logo.png" alt="TypoMaster Logo" class="logo" />
-    </header>
+    <Header />
     <div class="text-display" v-html="coloredText"></div>
 
     <textarea
@@ -18,11 +14,11 @@
       @cut.prevent
     ></textarea>
 
-    <div class="stats">
-      <p>⏱ Temps écoulé : {{ elapsedTime }}s</p>
-      <p>❌ Erreurs : {{ errorCount }}</p>
-      <p>⚡ WPM : {{ wpm }}</p>
-    </div>
+    <Stats 
+      :wpm="wpm"
+      :errors="errorCount"
+      :elapsedTime="elapsedTime"
+    />
 
     <div class="buttons">
       <button @click="startTest">Démarrer</button>
@@ -41,20 +37,17 @@
       <button @click="startTest">Recommencer</button>
     </div>
 
-    <div class="history">
-      <h2>Historique</h2>
-      <ul>
-        <li v-for="(item, index) in history" :key="index">
-          {{ item.date }} ➔ WPM: {{ item.wpm }} | Erreurs: {{ item.errors }} | Temps: {{ item.time }}s
-        </li>
-      </ul>
-    </div>
+    <History :history="history" />
   </div>
 </template>
 
 <script setup>
 import '../assets/style/main.css'
 import { ref, computed, onMounted } from 'vue'
+
+import Header from './Header.vue'
+import Stats from './Stats.vue'
+import History from './History.vue'
 
 import easy from '../assets/json/easy.json'
 import medium from '../assets/json/medium.json'
@@ -68,7 +61,6 @@ const elapsedTime = ref(0)
 const stop = ref(false)
 const finished = ref(false)
 const inactivityTimer = ref(null)
-const history = ref([])
 
 let timer = null
 
@@ -80,7 +72,6 @@ onMounted(() => {
   if (localStorage.getItem('typomaster-history')) {
     console.log('Historique trouvé dans le localStorage.', history.value);
   }
-  loadHistory()
   console.log('Composant TypingTest monté, niveau actuel:', level.value);
 })
 
@@ -116,18 +107,8 @@ const coloredText = computed(() => {
     return result;
 })
 
-const wpm = computed(() => {
-  if (elapsedTime.value === 0) return 0
-  const words = userInput.value.trim().split(/\s+/).length
-  return Math.round((words / elapsedTime.value) * 60)
-})
-
 function normalize(str) {
   return str.replace(/’/g, "'").replace(/`/g, "'").replace(/œ/g, 'oe').replace(/æ/g, 'ae').toLowerCase();
-}
-
-function loadHistory() {
-  history.value = JSON.parse(localStorage.getItem('typomaster-scores') || '[]')
 }
 
 function getRandomText(level) {
